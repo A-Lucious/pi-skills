@@ -1,6 +1,6 @@
 ---
 name: pdf-document-parsing
-description: Convert PDFs and documents to structured formats (Markdown, JSON) for LLM/ RAG pipelines. Three tools with automatic selection: (1) OpenDataLoader PDF — #1 benchmark accuracy (0.907), bounding boxes, hybrid AI, auto-tagging, Java required; (2) MinerU — high-precision OCR/formula/table extraction, GPU-friendly, heavy deps; (3) MarkItDown — lightweight multi-format converter (PDF/DOCX/PPTX/XLSX/HTML/audio/YouTube), minmal deps, quick & simple. Use when extracting text, tables, or structured data from documents for LLM context, RAG indexing, or text analysis. Priority: OpenDataLoader >MinerU >MarkItDown unless user specifies otherwise.
+description: "Convert PDFs and documents to structured formats (Markdown, JSON) for LLM/RAG pipelines. Three tools with automatic selection: (1) OpenDataLoader PDF - #1 benchmark accuracy (0.907), bounding boxes, hybrid AI, auto-tagging, Java required; (2) MinerU - high-precision OCR/formula/table extraction, GPU-friendly, heavy deps; (3) MarkItDown - lightweight multi-format converter (PDF/DOCX/PPTX/XLSX/HTML/audio/YouTube), minimal deps, quick and simple. Use when extracting text, tables, or structured data from documents for LLM context, RAG indexing, or text analysis. Priority: OpenDataLoader then MinerU then MarkItDown unless user specifies otherwise."
 ---
 
 # Document Parsing — Unified Skill
