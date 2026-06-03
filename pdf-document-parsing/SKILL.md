@@ -40,6 +40,95 @@ nvidia-smi 2>/dev/null && echo "GPU detected — will use CUDA for MinerU" || ec
 ```
 
 
+## Global Environment Scan
+
+> **Before setting up the shared environment, check globally** whether any of the three tools are already available (system-wide pip, conda, active venv, etc.). This avoids unnecessary reinstallation.
+>
+> Scan in priority order: **OpenDataLoader PDF > MinerU > MarkItDown**.
+
+### Quick Individual Checks
+
+```bash
+# 1. OpenDataLoader PDF (requires Java 11+)
+java -version 2>&1 >/dev/null && python3 -c "import opendataloader_pdf; print('ODL v' + opendataloader_pdf.__version__)" 2>/dev/null \
+  && echo "✓ OpenDataLoader available globally" \
+  || echo "✗ OpenDataLoader not available globally"
+
+# 2. MinerU
+command -v mineru &>/dev/null && mineru --version 2>/dev/null \
+  && echo "✓ MinerU available globally" \
+  || echo "✗ MinerU not available globally"
+
+# 3. MarkItDown
+command -v markitdown &>/dev/null \
+  && echo "✓ MarkItDown available globally" \
+  || echo "✗ MarkItDown not available globally"
+```
+
+### Combined Diagnostic Scan
+
+```bash
+#!/bin/bash
+echo "=== Global Environment Scan ==="
+echo "Priority: OpenDataLoader PDF > MinerU > MarkItDown"
+echo ""
+
+FOUND_ANY=0
+
+# — 1. OpenDataLoader PDF —
+if java -version 2>&1 >/dev/null && python3 -c "import opendataloader_pdf" 2>/dev/null; then
+    VER=$(python3 -c "import opendataloader_pdf; print(opendataloader_pdf.__version__)")
+    echo "✓ [1] OpenDataLoader PDF — AVAILABLE (v$VER)"
+    echo "   → PRIMARY TOOL READY — no installation needed"
+    FOUND_ANY=1
+else
+    echo "✗ [1] OpenDataLoader PDF — NOT FOUND"
+    if ! java -version 2>&1 >/dev/null; then
+        echo "   (Java 11+ missing — install from https://adoptium.net/)"
+    fi
+fi
+
+# — 2. MinerU —
+if command -v mineru &>/dev/null; then
+    VER=$(mineru --version 2>/dev/null || echo "version unknown")
+    echo "✓ [2] MinerU — AVAILABLE ($VER)"
+    echo "   → FALLBACK TOOL READY"
+    FOUND_ANY=1
+else
+    echo "✗ [2] MinerU — NOT FOUND"
+fi
+
+# — 3. MarkItDown —
+if command -v markitdown &>/dev/null; then
+    echo "✓ [3] MarkItDown — AVAILABLE"
+    echo "   → LIGHTWEIGHT FALLBACK READY"
+    FOUND_ANY=1
+else
+    echo "✗ [3] MarkItDown — NOT FOUND"
+fi
+
+echo ""
+if [ $FOUND_ANY -eq 1 ]; then
+    echo "→ At least one tool found globally. Use the highest-priority available tool."
+    echo "→ If a higher-priority tool is needed, proceed to Shared Environment Management."
+else
+    echo "→ No tools found globally. Proceed to Shared Environment Management below."
+fi
+```
+
+### How to Act on the Scan Results
+
+| Scan Outcome | Action |
+|--------------|--------|
+| OpenDataLoader found globally | Use it directly. Skip shared env unless you need MinerU/MarkItDown side-by-side. |
+| MinerU found globally (no ODL) | Use MinerU. Install ODL into shared env only if bounding boxes / #1 accuracy needed. |
+| MarkItDown found globally (no ODL/MinerU) | Use MarkItDown for quick conversions. Install ODL/MinerU into shared env for higher accuracy. |
+| None found globally | Proceed to **Shared Environment Management** and install as needed. |
+| Conda env or active venv has tools | Note the venv path for reuse, or replicate into `pdf-parse-env` for consistency. |
+
+> **If a global environment (conda, active venv, etc.) already has some but not all tools, you may still want the shared `pdf-parse-env` for a clean, reproducible setup.**
+
+
 ## Shared Environment Management
 
 > **All three tools share a single `.venv`**. Never create multiple separate virtual environments for these tools.
