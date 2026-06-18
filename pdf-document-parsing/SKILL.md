@@ -7,6 +7,8 @@ description: "Convert PDFs and documents to structured formats (Markdown, JSON) 
 
 Three PDF/document-to-Markdown tools in a **shared environment**. Selection priority: **OpenDataLoader PDF > MinerU > MarkItDown** (unless the user specifies otherwise).
 
+**PDF gate:** For PDF inputs, missing OpenDataLoader is not permission to fall back. Install or reuse `pdf-parse-env` and install `opendataloader-pdf` before considering lower-priority tools. Only fall back after recording the exact OpenDataLoader installation or runtime failure.
+
 
 ## Tool Selection Guide
 
@@ -108,11 +110,10 @@ else
 fi
 
 echo ""
-if [ $FOUND_ANY -eq 1 ]; then
-    echo "→ At least one tool found globally. Use the highest-priority available tool."
-    echo "→ If a higher-priority tool is needed, proceed to Shared Environment Management."
+if java -version 2>&1 >/dev/null && python3 -c "import opendataloader_pdf" 2>/dev/null; then
+    echo "→ OpenDataLoader ready. Use it for PDF inputs."
 else
-    echo "→ No tools found globally. Proceed to Shared Environment Management below."
+    echo "→ OpenDataLoader is not ready. For PDF inputs, proceed to Shared Environment Management and install opendataloader-pdf before fallback."
 fi
 ```
 
@@ -120,13 +121,13 @@ fi
 
 | Scan Outcome | Action |
 |--------------|--------|
-| OpenDataLoader found globally | Use it directly. Skip shared env unless you need MinerU/MarkItDown side-by-side. |
-| MinerU found globally (no ODL) | Use MinerU. Install ODL into shared env only if bounding boxes / #1 accuracy needed. |
-| MarkItDown found globally (no ODL/MinerU) | Use MarkItDown for quick conversions. Install ODL/MinerU into shared env for higher accuracy. |
-| None found globally | Proceed to **Shared Environment Management** and install as needed. |
-| Conda env or active venv has tools | Note the venv path for reuse, or replicate into `pdf-parse-env` for consistency. |
+| OpenDataLoader found globally | Use it directly for PDF inputs. Skip shared env only if the active environment can import `opendataloader_pdf`. |
+| MinerU found globally (no ODL) | For PDF inputs, do **not** use MinerU yet. Reuse/create `pdf-parse-env`, install `opendataloader-pdf`, and verify import/CLI first. |
+| MarkItDown found globally (no ODL/MinerU) | For PDF inputs, do **not** use MarkItDown yet. Reuse/create `pdf-parse-env`, install `opendataloader-pdf`, and verify import/CLI first. |
+| None found globally | Proceed to **Shared Environment Management** and install `opendataloader-pdf` first for PDF inputs. |
+| Conda env or active venv has tools | Use that env only if it imports `opendataloader_pdf`; otherwise replicate into `pdf-parse-env` and install ODL. |
 
-> **If a global environment (conda, active venv, etc.) already has some but not all tools, you may still want the shared `pdf-parse-env` for a clean, reproducible setup.**
+> **For PDF inputs, fallback requires evidence.** Record the exact OpenDataLoader blocker (missing Java, package installation failure, import failure, CLI/runtime failure, unsupported input, or explicit user override) before using MinerU, MarkItDown, `pdftotext`, `pdftoppm`, or other lightweight tools as the primary parser.
 
 
 ## Shared Environment Management
@@ -147,12 +148,15 @@ source pdf-parse-env/bin/activate
 pip install --upgrade pip uv
 ```
 
-### Step 2: Activate and Install on Demand
+### Step 2: Activate and Install Required PDF Parser
 
-Always activate the shared env first, then install only the tool(s) needed for the current task:
+Always activate the shared env first. For PDF inputs, install OpenDataLoader immediately if it is not already importable; do not skip to lower-priority tools just because they are already available.
 
 ```bash
 source pdf-parse-env/bin/activate
+python -c "import opendataloader_pdf; print('OpenDataLoader:', opendataloader_pdf.__version__)" 2>/dev/null \
+  || pip install -U opendataloader-pdf
+python -c "import opendataloader_pdf; print('OpenDataLoader ready:', opendataloader_pdf.__version__)"
 ```
 
 ### Step 3: Verify Installed Tools
@@ -170,18 +174,21 @@ which markitdown 2>/dev/null || echo "MarkItDown not installed"
 ```bash
 source pdf-parse-env/bin/activate
 
-# For OpenDataLoader
+# REQUIRED first for PDF inputs
 pip install -U opendataloader-pdf
+python -c "import opendataloader_pdf; print('OpenDataLoader ready:', opendataloader_pdf.__version__)"
+
 # Optional: hybrid mode
 pip install -U "opendataloader-pdf[hybrid]"
 # Optional: LangChain
 pip install -U langchain-opendataloader-pdf
 
+# Fallback only after recording why OpenDataLoader cannot be used
 # For MinerU (heavy — CPU-only torch preferred if no GPU)
 uv pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
 uv pip install -U "mineru[all]"
 
-# For MarkItDown
+# For MarkItDown (non-PDF default, or PDF fallback with recorded ODL blocker)
 pip install 'markitdown[all]'
 ```
 
@@ -384,7 +391,7 @@ Map RAG answer chunks back to exact PDF locations using `bounding box` + `page n
 - Requires: Python 3.10+ (GPU optional but recommended)
 - License: AGPL-3.0
 
-> Use MinerU when: OpenDataLoader is unavailable (no Java), GPU acceleration is desired, or document has CJK text that ODL struggles with.
+> Use MinerU for PDF only after the OpenDataLoader gate fails and the blocker is recorded (for example: Java cannot be installed, `opendataloader-pdf` install/import fails, ODL runtime fails, or ODL output is unusable for the document). GPU acceleration or CJK/OCR needs alone do not skip the ODL gate.
 
 ## Installation (into shared env)
 
@@ -473,14 +480,14 @@ Edit `mineru.json` in user directory (auto-generated by `mineru-models-download`
 
 # 3. MarkItDown (LIGHTWEIGHT BROAD-FORMAT)
 
-**Minimal, broad-format converter. Best when you need quick & simple, or for non-PDF formats (DOCX/PPTX/XLSX/HTML/audio/YouTube/EPUB/ZIP).**
+**Minimal, broad-format converter. Best for non-PDF formats (DOCX/PPTX/XLSX/HTML/audio/YouTube/EPUB/ZIP), or for PDF only after the OpenDataLoader gate has failed with recorded evidence.**
 
 - Input: PDF, DOCX, PPTX, XLSX/XLS, images, audio, HTML, CSV/JSON/XML, ZIP, EPUB, YouTube, Outlook .msg, Jupyter notebooks, RSS, Wikipedia
 - Output: Markdown only
 - Requires: Python 3.10+
 - License: MIT
 
-> Use MarkItDown when: you need to convert non-PDF formats, want zero-config simplicity, or don't need bounding boxes/structured JSON.
+> Use MarkItDown when: you need to convert non-PDF formats, or a PDF task has a recorded OpenDataLoader blocker and only lightweight Markdown extraction is acceptable. Do not use it as the first PDF parser just because it is installed.
 
 ## Installation (into shared env)
 
@@ -597,12 +604,11 @@ PDF, DOCX, PPTX, XLSX, XLS, images (JPG/PNG), audio (WAV/MP3/M4A), HTML, CSV, JS
 ## Quick Decision Tree
 
 ```
-Input is PDF?
-├── Need bounding boxes / JSON / #1 accuracy? → OpenDataLoader
-├── Need Tagged PDF for accessibility? → OpenDataLoader (auto-tagging)
-├── Have GPU and need high-precision OCR/formulas? → MinerU
-├── Quick & simple, just want Markdown? → MarkItDown
-└── Default: → OpenDataLoader
+PDF input? → OpenDataLoader gate first
+├── ODL globally importable? → Use OpenDataLoader
+├── ODL missing? → Reuse/create pdf-parse-env, install opendataloader-pdf, verify import/CLI
+├── ODL install/runtime/output fails with recorded blocker? → Then choose MinerU or MarkItDown fallback
+└── Explicit user override? → Record override, then use requested tool
 
 Input is DOCX / PPTX / XLSX?
 ├── Need high-precision parsing? → MinerU
