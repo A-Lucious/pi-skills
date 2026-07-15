@@ -1,0 +1,13 @@
+# Copy selected entries to ${XDG_CONFIG_HOME:-~/.config}/tele-brain/environment.
+# systemd reads this file for scheduled refresh and update checks.
+
+# TELE_BRAIN_MANIFEST_URL=https://example.invalid/tele-brain/release-manifest.json
+# Optional override for a custom manifest source; official releases use the bundled key.
+# TELE_BRAIN_OPENSSL_PUBKEY_FILE=/home/user/.config/tele-brain/release-public.pem
+# TELE_BRAIN_MANIFEST_SIGNATURE_URL=https://example.invalid/tele-brain/release-manifest.json.sig
+# TELE_BRAIN_MANIFEST_SIGNATURE_FORMAT=openssl
+# TELE_BRAIN_MINISIGN_PUBKEY_FILE=/home/user/.config/tele-brain/release.minisign.pub
+# TELE_BRAIN_AUTO_APPLY=patch
+# TELE_BRAIN_MAX_ARTIFACT_SIZE=104857600
+# TELE_BRAIN_MAX_EXTRACTED_SIZE=268435456
+# TELE_BRAIN_STATUS_STALE_AFTER=24h

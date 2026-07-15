@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "product": "tele-brain",
+  "channel": "stable",
+  "configured": false,
+  "version": "0.1.0",
+  "sequence": 0,
+  "artifact": {
+    "url": null,
+    "sha256": null,
+    "size": null,
+    "signature": null
+  },
+  "notes": "Set configured=true and publish an authenticated artifact before enabling updates."
+}

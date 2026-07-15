@@ -1,0 +1,8 @@
+[Unit]
+Description=Refresh the Tele Brain local software index
+
+[Service]
+Type=oneshot
+EnvironmentFile=-@TELE_BRAIN_CONFIG_FILE@
+TimeoutStartSec=10min
+ExecStart=/usr/bin/env TELE_BRAIN_CAPTURE_HELP=0 "@TELE_BRAIN_ROOT@/bin/tele-brain" refresh

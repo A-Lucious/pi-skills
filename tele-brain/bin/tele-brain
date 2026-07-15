@@ -1,0 +1,154 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SCRIPT_DIR="$(CDPATH= cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
+SKILL_ROOT="$(CDPATH= cd -- "$SCRIPT_DIR/.." && pwd -P)"
+DATA_DIR="$(realpath -m -- "${TELE_BRAIN_DATA_DIR:-$HOME/.local/share/tele-brain}")"
+
+usage() {
+	cat <<'EOF'
+Usage: tele-brain <command> [options]
+
+Commands:
+  refresh          Refresh the local software index
+  status           Show local index and updater status
+  doctor           Check the installation and runtime dependencies
+  update [action]  Run update.sh (defaults to "check")
+  help             Show this help
+EOF
+}
+
+status_command() {
+	printf 'skill_root: %s\n' "$SKILL_ROOT"
+	printf 'data_dir: %s\n' "$DATA_DIR"
+	"$SKILL_ROOT/scan.sh" --status
+
+	if [[ -x "$SKILL_ROOT/update.sh" ]]; then
+		"$SKILL_ROOT/update.sh" status
+	else
+		printf 'updater: unavailable\n'
+	fi
+}
+
+doctor_command() {
+	local failures=0 warnings=0 command path writable_ancestor
+
+	for path in "$SKILL_ROOT/SKILL.md" "$SKILL_ROOT/scan.sh" "$SKILL_ROOT/bin/tele-brain" "$SKILL_ROOT/keys/release-public.pem"; do
+		if [[ -r "$path" ]]; then
+			printf '[ok] readable: %s\n' "$path"
+		else
+			printf '[fail] unreadable: %s\n' "$path"
+			failures=$((failures + 1))
+		fi
+	done
+
+	if [[ -x "$SKILL_ROOT/scan.sh" ]]; then
+		printf '[ok] executable: %s\n' "$SKILL_ROOT/scan.sh"
+	else
+		printf '[fail] not executable: %s\n' "$SKILL_ROOT/scan.sh"
+		failures=$((failures + 1))
+	fi
+
+	if [[ -x "$SKILL_ROOT/update.sh" ]]; then
+		printf '[ok] executable: %s\n' "$SKILL_ROOT/update.sh"
+	else
+		printf '[warn] updater unavailable: %s\n' "$SKILL_ROOT/update.sh"
+		warnings=$((warnings + 1))
+	fi
+
+	for command in bash flock awk sha256sum curl jq tar timeout stat date sed find sort tr tail cut grep head cp chmod ln rm mkdir mktemp realpath mv openssl; do
+		if command -v "$command" >/dev/null 2>&1; then
+			printf '[ok] command: %s\n' "$command"
+		else
+			printf '[fail] command missing: %s\n' "$command"
+			failures=$((failures + 1))
+		fi
+	done
+	if mv --help 2>/dev/null | grep -q -- '--exchange' && mv --help 2>/dev/null | grep -q -- '--no-copy'; then
+		printf '[ok] feature: GNU mv atomic exchange\n'
+	else
+		printf '[fail] feature missing: GNU mv --exchange --no-copy\n'
+		failures=$((failures + 1))
+	fi
+	if timeout --help 2>&1 | grep -q -- '--kill-after'; then
+		printf '[ok] feature: timeout kill-after\n'
+	else
+		printf '[fail] feature missing: timeout --kill-after\n'
+		failures=$((failures + 1))
+	fi
+	if head --help 2>&1 | grep -Eq -- '--zero-terminated|--zero' ; then
+		printf '[ok] feature: NUL-safe head\n'
+	else
+		printf '[fail] feature missing: NUL-safe head -z\n'
+		failures=$((failures + 1))
+	fi
+
+	if [[ -d "$DATA_DIR" ]]; then
+		if [[ -w "$DATA_DIR" ]]; then
+			printf '[ok] data directory writable: %s\n' "$DATA_DIR"
+		else
+			printf '[fail] data directory not writable: %s\n' "$DATA_DIR"
+			failures=$((failures + 1))
+		fi
+	else
+		writable_ancestor="$DATA_DIR"
+		while [[ ! -e "$writable_ancestor" && "$writable_ancestor" != "/" ]]; do
+			writable_ancestor="$(dirname -- "$writable_ancestor")"
+		done
+		if [[ -d "$writable_ancestor" && -w "$writable_ancestor" ]]; then
+			printf '[ok] data directory can be created: %s\n' "$DATA_DIR"
+		else
+			printf '[fail] data directory cannot be created: %s\n' "$DATA_DIR"
+			failures=$((failures + 1))
+		fi
+	fi
+
+	if command -v systemctl >/dev/null 2>&1; then
+		printf '[ok] command: systemctl\n'
+	else
+		printf '[warn] systemctl unavailable; user timers cannot be managed\n'
+		warnings=$((warnings + 1))
+	fi
+
+	printf 'doctor: failures=%d warnings=%d\n' "$failures" "$warnings"
+	[[ "$failures" -eq 0 ]]
+}
+
+update_command() {
+	if [[ ! -x "$SKILL_ROOT/update.sh" ]]; then
+		printf 'tele-brain: updater is unavailable: %s\n' "$SKILL_ROOT/update.sh" >&2
+		return 127
+	fi
+	if [[ "$#" -eq 0 ]]; then
+		set -- check
+	fi
+	exec "$SKILL_ROOT/update.sh" "$@"
+}
+
+command_name="${1:-help}"
+[[ "$#" -eq 0 ]] || shift
+
+case "$command_name" in
+refresh)
+	exec "$SKILL_ROOT/scan.sh" "$@"
+	;;
+status)
+	[[ "$#" -eq 0 ]] || { printf 'tele-brain: status takes no arguments\n' >&2; exit 2; }
+	status_command
+	;;
+doctor)
+	[[ "$#" -eq 0 ]] || { printf 'tele-brain: doctor takes no arguments\n' >&2; exit 2; }
+	doctor_command
+	;;
+update)
+	update_command "$@"
+	;;
+help|-h|--help)
+	usage
+	;;
+*)
+	printf 'tele-brain: unknown command: %s\n' "$command_name" >&2
+	usage >&2
+	exit 2
+	;;
+esac

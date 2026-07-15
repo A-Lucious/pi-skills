@@ -1,0 +1,11 @@
+[Unit]
+Description=Refresh the Tele Brain index daily
+
+[Timer]
+OnCalendar=daily
+Persistent=true
+RandomizedDelaySec=30m
+Unit=tele-brain-refresh.service
+
+[Install]
+WantedBy=timers.target

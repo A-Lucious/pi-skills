@@ -1,0 +1,11 @@
+[Unit]
+Description=Check for Tele Brain updates weekly
+
+[Timer]
+OnCalendar=weekly
+Persistent=true
+RandomizedDelaySec=6h
+Unit=tele-brain-update.service
+
+[Install]
+WantedBy=timers.target
