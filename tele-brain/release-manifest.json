@@ -2,14 +2,21 @@
   "schema_version": 1,
   "product": "tele-brain",
   "channel": "stable",
-  "configured": false,
+  "configured": true,
   "version": "0.1.0",
-  "sequence": 0,
+  "sequence": 1784084512,
+  "issued_at": "2026-07-15T03:02:22+00:00",
   "artifact": {
-    "url": null,
-    "sha256": null,
-    "size": null,
-    "signature": null
+    "url": "https://github.com/A-Lucious/pi-skills/releases/download/tele-brain-v0.1.0/tele-brain-0.1.0.tar.gz",
+    "sha256": "5662be5e4a1fec2f4a8512fea68137f00a4704e05181b7fa48a88a1de8193f9f",
+    "size": 38891,
+    "signature": {
+      "format": "openssl",
+      "url": "https://github.com/A-Lucious/pi-skills/releases/download/tele-brain-v0.1.0/tele-brain-0.1.0.tar.gz.sig"
+    }
   },
-  "notes": "Set configured=true and publish an authenticated artifact before enabling updates."
+  "manifest_signature": {
+    "format": "openssl",
+    "url": "https://raw.githubusercontent.com/A-Lucious/pi-skills/master/tele-brain/release-manifest.json.sig"
+  }
 }
