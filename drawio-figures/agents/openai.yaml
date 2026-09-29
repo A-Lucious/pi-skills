@@ -1,0 +1,4 @@
+interface:
+  display_name: "DrawioFigures"
+  short_description: "Plan and build editable scientific figures"
+  default_prompt: "Use $drawio-figures to design or revise an editable scientific figure with explicit data, layout, and visual-check constraints."
