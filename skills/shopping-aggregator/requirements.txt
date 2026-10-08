@@ -1,0 +1,2 @@
+scrapling>=0.4.9
+pytest>=8.0
